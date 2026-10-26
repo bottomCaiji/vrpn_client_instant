@@ -29,10 +29,8 @@
 *
 */
 
-#ifndef VRPN_CLIENT_ROS_VRPN_CLIENT_ROS_H
-#define VRPN_CLIENT_ROS_VRPN_CLIENT_ROS_H
-
-#include "vrpn_client_ros/vrpn_client_ros.h"
+#ifndef VRPN_CLIENT_INSTANT_VRPN_CLIENT_INSTANT_H
+#define VRPN_CLIENT_INSTANT_VRPN_CLIENT_INSTANT_H
 
 #include "ros/ros.h"
 #include "geometry_msgs/PoseStamped.h"
@@ -42,30 +40,34 @@
 
 #include <vrpn_Tracker.h>
 #include <vrpn_Connection.h>
-#include <map>
+#include <chrono>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 
-namespace vrpn_client_ros
+namespace vrpn_client_instant
 {
 
   typedef std::shared_ptr<vrpn_Connection> ConnectionPtr;
   typedef std::shared_ptr<vrpn_Tracker_Remote> TrackerRemotePtr;
 
+  class TrackerPublisher;
+  class VrpnMainloop;
+
   class VrpnTrackerRos
   {
   public:
-
     typedef std::shared_ptr<VrpnTrackerRos> Ptr;
     /**
      * Create and initialize VrpnTrackerRos using an existing underlying VRPN connection object. The underlying
-     * connection object is responsible for calling the tracker's mainloop.
+     * connection owner is responsible for calling mainloop and serializing all VRPN access.
      */
     VrpnTrackerRos(std::string tracker_name, ConnectionPtr connection, ros::NodeHandle nh);
 
     /**
      * Create and initialize VrpnTrackerRos, creating a new connection to tracker_name@host. This constructor will
-     * register timer callbacks on nh to call mainloop.
+     * run a receiving thread which wakes when network data arrives.
      */
     VrpnTrackerRos(std::string tracker_name, std::string host, ros::NodeHandle nh);
 
@@ -77,20 +79,14 @@ namespace vrpn_client_ros
     void mainloop();
 
   private:
+    ConnectionPtr connection_;
     TrackerRemotePtr tracker_remote_;
-    std::vector<ros::Publisher> pose_pubs_, twist_pubs_, accel_pubs_;
-    ros::NodeHandle output_nh_;
-    bool use_server_time_, broadcast_tf_, process_sensor_id_;
-    std::string tracker_name;
+    std::shared_ptr<TrackerPublisher> publisher_;
+    std::mutex vrpn_mutex_;
+    std::unique_ptr<VrpnMainloop> mainloop_;
 
-    ros::Timer mainloop_timer;
-
-    geometry_msgs::PoseStamped pose_msg_;
-    geometry_msgs::TwistStamped twist_msg_;
-    geometry_msgs::AccelStamped accel_msg_;
-    geometry_msgs::TransformStamped transform_stamped_;
-
-    void init(std::string tracker_name, ros::NodeHandle nh, bool create_mainloop_timer);
+    void init(std::string tracker_name, ros::NodeHandle nh);
+    bool receive();
 
     static void VRPN_CALLBACK handle_pose(void *userData, const vrpn_TRACKERCB tracker_pose);
 
@@ -102,7 +98,6 @@ namespace vrpn_client_ros
   class VrpnClientRos
   {
   public:
-
     typedef std::shared_ptr<VrpnClientRos> Ptr;
     typedef std::unordered_map<std::string, VrpnTrackerRos::Ptr> TrackerMap;
 
@@ -110,6 +105,8 @@ namespace vrpn_client_ros
      * Create and initialize VrpnClientRos object in the private_nh namespace.
      */
     VrpnClientRos(ros::NodeHandle nh, ros::NodeHandle private_nh);
+
+    ~VrpnClientRos();
 
     static std::string getHostStringFromParams(ros::NodeHandle host_nh);
 
@@ -137,8 +134,14 @@ namespace vrpn_client_ros
      */
     TrackerMap trackers_;
 
-    ros::Timer refresh_tracker_timer_, mainloop_timer;
-  };
-}  // namespace vrpn_client_ros
+    std::mutex vrpn_mutex_;
+    double refresh_tracker_frequency_;
+    std::chrono::steady_clock::time_point next_tracker_refresh_;
+    std::unique_ptr<VrpnMainloop> mainloop_;
 
-#endif  // VRPN_CLIENT_ROS_VRPN_CLIENT_ROS_H
+    bool receive();
+    void updateTrackersLocked();
+  };
+}  // namespace vrpn_client_instant
+
+#endif  // VRPN_CLIENT_INSTANT_VRPN_CLIENT_INSTANT_H

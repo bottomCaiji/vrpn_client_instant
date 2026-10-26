@@ -29,13 +29,13 @@
 *
 */
 
-#include "vrpn_client_ros/vrpn_client_ros.h"
+#include "vrpn_client_instant/vrpn_client_instant.h"
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "vrpn_client_node");
+  ros::init(argc, argv, "vrpn_client_instant_node");
   ros::NodeHandle nh, private_nh("~");
-  vrpn_client_ros::VrpnClientRos client(nh, private_nh);
+  vrpn_client_instant::VrpnClientRos client(nh, private_nh);
   ros::spin();
   return 0;
 }

@@ -1,0 +1,4 @@
+<launch>
+  <test test-name="tracker_publisher" pkg="vrpn_client_instant"
+        type="test_tracker_publisher" time-limit="60.0" />
+</launch>

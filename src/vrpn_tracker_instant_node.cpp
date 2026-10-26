@@ -29,23 +29,24 @@
 *
 */
 
-#include "vrpn_client_ros/vrpn_client_ros.h"
+#include "vrpn_client_instant/vrpn_client_instant.h"
 
 #include <string>
 
 int main(int argc, char **argv)
 {
-  ros::init(argc, argv, "vrpn_tracker_node");
+  ros::init(argc, argv, "vrpn_tracker_instant_node");
   ros::NodeHandle nh, private_nh("~");
 
   std::string tracker_name;
   if (!private_nh.getParam("tracker_name", tracker_name))
   {
-    ROS_FATAL_STREAM("Must provide paramter tracker_name for node " << private_nh.getNamespace());
+    ROS_FATAL_STREAM("Must provide parameter tracker_name for node " << private_nh.getNamespace());
+    return 1;
   }
 
-  std::string host = vrpn_client_ros::VrpnClientRos::getHostStringFromParams(private_nh);
-  vrpn_client_ros::VrpnTrackerRos tracker(tracker_name, host, nh);
+  std::string host = vrpn_client_instant::VrpnClientRos::getHostStringFromParams(private_nh);
+  vrpn_client_instant::VrpnTrackerRos tracker(tracker_name, host, nh);
 
   ros::spin();
   return 0;

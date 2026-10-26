@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>vrpn_client_ros</name>
+  <name>vrpn_client_instant</name>
   <version>0.2.2</version>
   <description>ROS client nodes for the <a href="https://github.com/vrpn/vrpn/wiki">VRPN</a> library, compatible with VICON, OptiTrack, and other <a href="https://github.com/vrpn/vrpn/wiki/Supported-hardware-devices">hardware interfaces</a>.</description>
 
@@ -17,6 +17,7 @@
 
   <test_depend>roslaunch</test_depend>
   <test_depend>roslint</test_depend>
+  <test_depend>rostest</test_depend>
 
   <export>
   </export>
